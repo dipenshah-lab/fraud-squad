@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FRAUD SQUAD — Beat the Algorithm</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+
+  :root {
+    --navy: #0A0E1A;
+    --green: #00FF88;
+    --amber: #FFB800;
+    --red: #FF3B3B;
+    --white: #FFFFFF;
+    --grey: #8B9AB0;
+    --dark2: #0F1525;
+    --dark3: #151C30;
+    --green-dim: rgba(0,255,136,0.15);
+    --green-glow: 0 0 20px rgba(0,255,136,0.4);
+    --amber-glow: 0 0 20px rgba(255,184,0,0.4);
+    --red-glow: 0 0 20px rgba(255,59,59,0.4);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events:none; z-index:1000;
+  }
+
+  body::after {
+    content:'';
+    position:fixed; inset:0;
+    background-image: linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none; z-index:0;
+  }
+
+  .screen {
+    position:fixed; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding:20px;
+    z-index:10;
+    transition: opacity 0.4s ease;
+  }
+  .screen.hidden { opacity:0; pointer-events:none; }
+
+  /* ===== ATTRACT ===== */
+  #attract { text-align:center; background: var(--navy); }
+
+  .logo-badge {
+    display:inline-flex; align-items:center; gap:10px;
+    background: var(--green-dim); border: 1px solid var(--green);
+    padding: 8px 20px; letter-spacing: 4px; font-size: 13px;
+    color: var(--green); margin-bottom: 30px;
+  }
+  .logo-badge::before {
+    content:''; width:8px; height:8px; background: var(--green);
+    border-radius:50%; animation: pulse-dot 1.2s ease infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100%{ opacity:1; box-shadow: 0 0 0 0 rgba(0,255,136,0.5); }
+    50%{ opacity:0.6; box-shadow: 0 0 0 6px rgba(0,255,136,0); }
+  }
+
+  .main-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(60px, 12vw, 140px);
+    letter-spacing: 6px; line-height: 0.9;
+    color: var(--white); text-shadow: 0 0 60px rgba(255,255,255,0.1);
+    margin-bottom: 8px;
+  }
+  .main-title span { display:block; color: var(--green); text-shadow: var(--green-glow), 0 0 80px rgba(0,255,136,0.3); }
+
+  .tagline { font-size: clamp(14px, 2.5vw, 22px); color: var(--grey); letter-spacing: 1px; margin-bottom: 50px; font-weight: 600; }
+  .tagline em { color: var(--amber); font-style:normal; }
+
+  .ticker-wrap {
+    width:100%; overflow:hidden;
+    border-top: 1px solid rgba(0,255,136,0.2); border-bottom: 1px solid rgba(0,255,136,0.2);
+    padding: 8px 0; margin-bottom: 50px; background: rgba(0,255,136,0.03);
+  }
+  .ticker {
+    display:flex; gap:60px; white-space:nowrap;
+    animation: scroll-left 20s linear infinite;
+    font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--green); opacity: 0.7;
+  }
+  @keyframes scroll-left { 0%{ transform: translateX(0); } 100%{ transform: translateX(-50%); } }
+  .ticker-item { display:flex; gap:15px; }
+  .ticker-item .up { color: var(--green); }
+  .ticker-item .down { color: var(--red); }
+
+  .start-btn {
+    font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 4px;
+    background: var(--green); color: var(--navy); border: none; padding: 18px 60px;
+    cursor: pointer; transition: all 0.2s;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    box-shadow: var(--green-glow);
+  }
+  .start-btn:hover { background: #00FFB3; transform: scale(1.04); box-shadow: 0 0 40px rgba(0,255,136,0.7); }
+
+  .free-badge { margin-top: 20px; font-size: 14px; color: var(--amber); letter-spacing: 3px; font-weight: 700; }
+
+  .corner { position:fixed; width:40px; height:40px; z-index:1; transition: opacity 0.3s; }
+  body.in-game .corner { opacity: 0; pointer-events: none; }
+  .corner-tl { top:20px; left:20px; border-top:2px solid var(--green); border-left:2px solid var(--green); }
+  .corner-tr { top:20px; right:20px; border-top:2px solid var(--green); border-right:2px solid var(--green); }
+  .corner-bl { bottom:20px; left:20px; border-bottom:2px solid var(--green); border-left:2px solid var(--green); }
+  .corner-br { bottom:20px; right:20px; border-bottom:2px solid var(--green); border-right:2px solid var(--green); }
+
+  /* ===== SCENARIO SELECT ===== */
+  #scenario-select { background: var(--navy); text-align:center; }
+
+  .select-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 4px; color: var(--amber); margin-bottom: 8px; }
+  .select-sub { color: var(--grey); font-size: 16px; margin-bottom: 40px; letter-spacing: 1px; }
+
+  .scenario-cards { display:flex; gap:20px; flex-wrap:wrap; justify-content:center; max-width: 900px; }
+
+  .scenario-card {
+    background: var(--dark3); border: 1px solid rgba(255,255,255,0.1);
+    padding: 28px 32px; width: 260px; cursor:pointer; transition: all 0.25s;
+    text-align:left; position:relative; overflow:hidden;
+  }
+  .scenario-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background: var(--green); transform: scaleX(0); transition: transform 0.25s; transform-origin: left;
+  }
+  .scenario-card:hover { border-color: var(--green); transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,255,136,0.2); }
+  .scenario-card:hover::before { transform: scaleX(1); }
+
+  .card-level { font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 3px; color: var(--green); margin-bottom: 8px; }
+  .card-name { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 2px; color: var(--white); margin-bottom: 12px; }
+  .card-desc { font-size: 13px; color: var(--grey); line-height: 1.5; margin-bottom: 16px; }
+  .card-meta { display:flex; gap:10px; flex-wrap:wrap; }
+  .meta-tag { font-size: 11px; letter-spacing: 1px; padding: 3px 8px; border: 1px solid; font-weight: 700; }
+  .meta-tag.age { border-color: var(--amber); color: var(--amber); }
+  .meta-tag.diff-easy { border-color: var(--green); color: var(--green); }
+  .meta-tag.diff-med { border-color: var(--amber); color: var(--amber); }
+  .meta-tag.diff-hard { border-color: var(--red); color: var(--red); }
+
+  .back-btn {
+    position:fixed; top:20px; left:20px; background:transparent;
+    border: 1px solid var(--grey); color: var(--grey);
+    font-family: 'Rajdhani', sans-serif; font-size: 14px; letter-spacing: 2px;
+    padding: 8px 16px; cursor:pointer; transition: all 0.2s; z-index:100;
+  }
+  .back-btn:hover { border-color: var(--white); color: var(--white); }
+
+  /* ===== GAME SCREEN ===== */
+  #game { flex-direction: column; padding: 0; justify-content: flex-start; overflow: hidden; }
+
+  .game-topbar {
+    width:100%; background: var(--dark2);
+    border-bottom: 1px solid rgba(0,255,136,0.2);
+    padding: 10px 20px; display:flex; align-items:center; gap:14px; flex-shrink:0;
+  }
+
+  .scenario-label {
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+    color: var(--amber); letter-spacing: 2px; white-space:nowrap;
+    background: rgba(255,184,0,0.08); border: 1px solid rgba(255,184,0,0.25);
+    padding: 3px 10px;
+  }
+
+  .algo-label {
+    font-family: 'Share Tech Mono', monospace; font-size: 12px;
+    color: var(--green); letter-spacing: 2px; white-space:nowrap;
+    display:flex; align-items:center; gap:8px;
+  }
+  .algo-label::before {
+    content:''; width:8px; height:8px; background: var(--green);
+    border-radius:50%; animation: pulse-dot 1s ease infinite;
+  }
+
+  .scan-bar-wrap {
+    flex:1; height: 14px; background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.3); position:relative; overflow:hidden;
+  }
+  .scan-bar-fill {
+    height:100%; background: linear-gradient(90deg, var(--green), #00FFB3);
+    box-shadow: 0 0 10px rgba(0,255,136,0.6); transition: width 0.3s linear; width: 0%; position:relative;
+  }
+  .scan-bar-fill::after {
+    content:''; position:absolute; right:0; top:0; bottom:0; width:20px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
+    animation: shimmer 0.8s ease infinite;
+  }
+  @keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .scan-pct { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--green); white-space:nowrap; min-width: 40px; text-align:right; }
+
+  .timer-display {
+    font-family: 'Share Tech Mono', monospace; font-size: 22px;
+    color: var(--amber); text-shadow: var(--amber-glow); white-space:nowrap; min-width: 60px; text-align:right;
+  }
+  .timer-display.urgent { color: var(--red); text-shadow: var(--red-glow); animation: timer-pulse 0.5s ease infinite; }
+  @keyframes timer-pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  .pause-btn {
+    font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 2px;
+    background: transparent; border: 1px solid var(--amber); color: var(--amber);
+    padding: 6px 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+  }
+  .pause-btn:hover { background: rgba(255,184,0,0.1); }
+  .pause-btn.paused { background: var(--amber); color: var(--navy); }
+
+  .info-btn {
+    font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 2px;
+    background: transparent; border: 1px solid rgba(139,154,176,0.4); color: var(--grey);
+    padding: 6px 12px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .info-btn:hover { border-color: var(--white); color: var(--white); }
+
+  .game-body { flex:1; display:flex; overflow:hidden; width:100%; position:relative; }
+
+  .feed-panel {
+    flex: 1; padding: 16px 20px; overflow-y: auto;
+    border-right: 1px solid rgba(255,255,255,0.07);
+  }
+  .feed-panel::-webkit-scrollbar { width:4px; }
+  .feed-panel::-webkit-scrollbar-track { background: transparent; }
+  .feed-panel::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.3); }
+
+  .feed-title {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--grey);
+    letter-spacing: 2px; margin-bottom: 12px; display:flex; align-items:center; gap:8px;
+  }
+  .feed-title::after { content:''; flex:1; height:1px; background: rgba(255,255,255,0.06); }
+
+  .feed-header {
+    display:grid; grid-template-columns: 70px 80px 1fr 80px 80px;
+    gap:8px; padding: 5px 10px; margin-bottom: 6px;
+    font-family: 'Share Tech Mono', monospace; font-size: 10px;
+    color: rgba(255,255,255,0.25); letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .feed-row {
+    display:grid; grid-template-columns: 70px 80px 1fr 80px 80px;
+    gap:8px; padding: 7px 10px; margin-bottom: 3px;
+    font-family: 'Share Tech Mono', monospace; font-size: 11px;
+    border-left: 3px solid transparent;
+    opacity:0; animation: row-appear 0.3s ease forwards;
+  }
+  @keyframes row-appear { from{ opacity:0; transform:translateX(-6px); } to{ opacity:1; transform:translateX(0); } }
+  .feed-row:nth-child(even) { background: rgba(255,255,255,0.018); }
+  .feed-row.buy { border-left-color: rgba(0,255,136,0.5); }
+  .feed-row.sell { border-left-color: rgba(255,59,59,0.5); }
+  .feed-row.cancel { border-left-color: rgba(255,184,0,0.4); animation: row-appear 0.3s ease forwards; }
+
+  .feed-col { color: var(--grey); display:flex; align-items:center; }
+  .feed-col.trader { color: var(--white); font-weight:700; }
+  .feed-col.buy-label { color: var(--green); }
+  .feed-col.sell-label { color: var(--red); }
+  .feed-col.cancel-label { color: var(--amber); }
+
+  .traders-panel {
+    width: 260px; padding: 16px 16px; flex-shrink:0;
+    display:flex; flex-direction:column;
+  }
+
+  .traders-title {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--grey);
+    letter-spacing: 2px; margin-bottom: 14px; display:flex; align-items:center; gap:8px;
+  }
+  .traders-title::after { content:''; flex:1; height:1px; background: rgba(255,255,255,0.06); }
+
+  .trader-btn {
+    background: var(--dark3); border: 1px solid rgba(255,255,255,0.08);
+    color: var(--white); padding: 12px 14px; margin-bottom: 9px;
+    cursor:pointer; font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700;
+    letter-spacing: 1px; text-align:left; transition: all 0.2s;
+    display:flex; align-items:center; justify-content:space-between; position:relative; overflow:hidden;
+  }
+  .trader-btn::before { content:''; position:absolute; inset:0; background: var(--red); opacity:0; transition: opacity 0.2s; }
+  .trader-btn:hover { border-color: var(--red); transform: translateX(3px); box-shadow: -3px 0 0 var(--red); }
+  .trader-btn:hover::before { opacity:0.05; }
+  .trader-btn:hover .flag-icon { opacity:1; color: var(--red); }
+  .trader-btn span { position:relative; z-index:1; }
+
+  .trader-stats { font-size: 10px; color: var(--grey); margin-top: 2px; font-weight: 400; font-family: 'Share Tech Mono', monospace; }
+  .trader-btn-inner { display:flex; flex-direction:column; position:relative; z-index:1; }
+  .flag-icon { font-size: 16px; opacity: 0.2; transition: all 0.2s; position:relative; z-index:1; }
+
+  .flag-hint {
+    margin-top: auto; padding: 10px 14px;
+    background: rgba(255,59,59,0.05); border: 1px solid rgba(255,59,59,0.2);
+    font-size: 11px; color: rgba(255,59,59,0.7); letter-spacing: 1px; text-align:center;
+  }
+
+  /* PAUSE OVERLAY */
+  .paused-overlay {
+    position: absolute; inset: 0;
+    background: transparent;
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+    z-index: 50;
+    pointer-events: none; opacity: 0; transition: opacity 0.2s;
+    border: 2px solid transparent;
+  }
+  .paused-overlay.visible { opacity: 1; pointer-events: all; border-color: rgba(255,184,0,0.4); }
+  .paused-text { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 4px; color: var(--amber); background: rgba(10,14,26,0.85); padding: 6px 14px; margin: 10px; }
+  .paused-sub { display: none; }
+
+  /* INFO MODAL */
+  .info-modal {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,14,26,0.88); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .info-modal.visible { opacity: 1; pointer-events: all; }
+  .info-modal-box {
+    background: var(--dark2); border: 1px solid rgba(0,255,136,0.25);
+    max-width: 540px; width: 90%; padding: 36px 40px; position: relative;
+  }
+  .info-modal-box::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: linear-gradient(90deg, var(--green), transparent); }
+  .info-modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 4px; color: var(--green); margin-bottom: 20px; }
+  .info-modal-body { font-size: 15px; color: var(--grey); line-height: 1.7; margin-bottom: 24px; }
+  .info-modal-body strong { color: var(--white); }
+  .info-modal-body .step { display:flex; gap:14px; margin-bottom: 12px; align-items: flex-start; }
+  .info-modal-body .step-num { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green); flex-shrink:0; width:20px; line-height:1.1; }
+  .info-close {
+    font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 3px;
+    background: var(--green); color: var(--navy); border: none; padding: 10px 30px;
+    cursor: pointer; clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+    transition: all 0.2s;
+  }
+  .info-close:hover { transform: scale(1.04); }
+
+  /* ===== RESULT ===== */
+  #result { text-align:center; overflow-y: auto; }
+
+  .result-badge { font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 3px; padding: 6px 20px; margin-bottom: 20px; display:inline-block; }
+  .result-badge.win { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid var(--green); }
+  .result-badge.lose { background: rgba(255,59,59,0.1); color: var(--red); border: 1px solid var(--red); }
+  .result-badge.timeout { background: rgba(255,184,0,0.1); color: var(--amber); border: 1px solid var(--amber); }
+  .result-badge.wrong { background: rgba(255,184,0,0.1); color: var(--amber); border: 1px solid var(--amber); }
+
+  .result-headline { font-family: 'Bebas Neue', sans-serif; font-size: clamp(48px, 10vw, 100px); letter-spacing: 4px; line-height: 1; margin-bottom: 8px; }
+  .result-headline.win { color: var(--green); text-shadow: var(--green-glow); }
+  .result-headline.lose { color: var(--red); text-shadow: var(--red-glow); }
+  .result-headline.timeout { color: var(--amber); text-shadow: var(--amber-glow); }
+  .result-headline.wrong { color: var(--amber); text-shadow: var(--amber-glow); }
+
+  .result-sub { font-size: 18px; color: var(--grey); margin-bottom: 6px; letter-spacing: 1px; }
+  .result-trader-name { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 3px; margin-bottom: 24px; }
+  .result-trader-name.correct { color: var(--green); }
+  .result-trader-name.wrong-flag { color: var(--amber); }
+  .result-trader-name.missed { color: var(--red); }
+
+  .result-explain {
+    max-width: 560px; margin: 0 auto 24px; font-size: 15px; color: var(--grey);
+    line-height: 1.7; padding: 18px 22px; background: var(--dark3); border-left: 3px solid var(--green); text-align:left;
+  }
+  .result-explain.lose { border-left-color: var(--red); }
+  .result-explain.timeout { border-left-color: var(--amber); }
+  .result-explain.wrong { border-left-color: var(--amber); }
+
+  .score-display {
+    font-family: 'Share Tech Mono', monospace; font-size: 14px; color: var(--green);
+    letter-spacing: 2px; margin-bottom: 24px; padding: 10px 28px;
+    background: rgba(0,255,136,0.06); border: 1px solid rgba(0,255,136,0.2); display:inline-block;
+  }
+  .score-display.lose { color: var(--red); background: rgba(255,59,59,0.06); border-color: rgba(255,59,59,0.2); }
+  .score-display.neutral { color: var(--amber); background: rgba(255,184,0,0.06); border-color: rgba(255,184,0,0.2); }
+
+  .result-cta { font-size: 13px; color: var(--amber); letter-spacing: 2px; margin-bottom: 24px; font-weight: 700; }
+
+  .result-btns { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+
+  .btn-play-again {
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px;
+    background: var(--green); color: var(--navy); border: none; padding: 13px 38px;
+    cursor:pointer; transition: all 0.2s;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    box-shadow: var(--green-glow);
+  }
+  .btn-play-again:hover { transform: scale(1.05); }
+
+  .btn-leaderboard {
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px;
+    background: transparent; color: var(--amber); border: 2px solid var(--amber);
+    padding: 13px 38px; cursor:pointer; transition: all 0.2s;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+  .btn-leaderboard:hover { background: rgba(255,184,0,0.1); }
+
+  /* ===== LEADERBOARD ===== */
+  #leaderboard-screen { background: var(--navy); text-align:center; }
+
+  .lb-title { font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 6px; color: var(--amber); margin-bottom: 4px; text-shadow: var(--amber-glow); }
+  .lb-sub { font-size: 14px; color: var(--grey); letter-spacing: 2px; margin-bottom: 30px; }
+
+  .lb-table { width: 100%; max-width: 600px; border-collapse: collapse; margin-bottom: 24px; }
+  .lb-table th { font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--grey); padding: 10px 16px; text-align:left; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .lb-table td { padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 16px; font-weight: 600; }
+  .lb-table tr:nth-child(1) td { color: #FFD700; }
+  .lb-table tr:nth-child(2) td { color: #C0C0C0; }
+  .lb-table tr:nth-child(3) td { color: #CD7F32; }
+  .lb-table tr td:first-child { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--grey); width:50px; }
+  .lb-table tr:nth-child(1) td:first-child { color: #FFD700; }
+  .lb-table tr:nth-child(2) td:first-child { color: #C0C0C0; }
+  .lb-table tr:nth-child(3) td:first-child { color: #CD7F32; }
+  .lb-time { font-family: 'Share Tech Mono', monospace; color: var(--green) !important; }
+  .lb-empty { color: var(--grey); font-size: 13px; font-family: 'Share Tech Mono', monospace; opacity: 0.4; }
+
+  .lb-name-input-wrap { margin-bottom: 24px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .lb-name-label { font-size: 14px; color: var(--grey); letter-spacing: 2px; }
+  .lb-name-input {
+    background: var(--dark3); border: 1px solid rgba(0,255,136,0.4);
+    color: var(--white); font-family: 'Bebas Neue', sans-serif; font-size: 28px;
+    letter-spacing: 4px; padding: 10px 22px; text-align:center; width: 280px;
+    outline:none; text-transform:uppercase;
+  }
+  .lb-name-input:focus { border-color: var(--green); box-shadow: 0 0 15px rgba(0,255,136,0.2); }
+
+  .btn-save-score {
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px;
+    background: var(--green); color: var(--navy); border: none; padding: 10px 34px;
+    cursor:pointer; clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    transition: all 0.2s;
+  }
+  .btn-save-score:hover { transform:scale(1.04); }
+
+  .btn-home {
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px;
+    background: transparent; color: var(--grey); border: 1px solid rgba(255,255,255,0.15);
+    padding: 10px 34px; cursor:pointer;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    transition: all 0.2s;
+  }
+  .btn-home:hover { color: var(--white); border-color: rgba(255,255,255,0.4); }
+
+  /* FLASH */
+  .flash-overlay { position:fixed; inset:0; z-index:500; pointer-events:none; opacity:0; }
+  .flash-overlay.active { animation: flash-anim 0.6s ease forwards; }
+  @keyframes flash-anim { 0%{ opacity:0.6; } 100%{ opacity:0; } }
+
+  @media (max-width: 700px) {
+    /* ── ATTRACT ── */
+    .main-title { font-size: clamp(52px, 16vw, 90px); }
+    .tagline { font-size: 15px; margin-bottom: 30px; }
+    .ticker-wrap { margin-bottom: 30px; }
+    .start-btn { font-size: 22px; padding: 16px 40px; }
+    .free-badge { font-size: 12px; }
+    .corner { width: 24px; height: 24px; }
+
+    /* ── SCENARIO SELECT ── */
+    .scenario-cards { flex-direction: column; align-items: center; }
+    .scenario-card { width: 90%; max-width: 340px; padding: 20px 22px; }
+    .card-name { font-size: 24px; }
+    .select-title { font-size: 36px; }
+
+    /* ── GAME TOPBAR — two clean rows ── */
+    .game-topbar {
+      flex-wrap: wrap;
+      padding: 6px 10px;
+      gap: 6px;
+    }
+    .scenario-label { font-size: 9px; padding: 2px 8px; }
+    .algo-label { font-size: 10px; gap: 5px; }
+    .algo-label::before { width: 6px; height: 6px; }
+    /* Scan bar fills full width on second row */
+    .scan-bar-wrap { order: 10; width: 100%; flex: none; height: 10px; }
+    .scan-pct { font-size: 10px; min-width: 30px; order: 10; }
+    .timer-display { font-size: 16px; min-width: 44px; }
+    .pause-btn { font-size: 11px; padding: 4px 9px; letter-spacing: 1px; }
+    .info-btn { font-size: 11px; padding: 4px 7px; letter-spacing: 1px; }
+
+    /* ── GAME BODY ── */
+    .game-body { flex-direction: column; overflow: hidden; }
+
+    /* ── FEED PANEL ── */
+    .feed-panel {
+      flex: 1;
+      min-height: 0;
+      padding: 8px 8px 4px;
+      border-right: none;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      overflow-y: auto;
+    }
+    .feed-title { font-size: 9px; margin-bottom: 6px; }
+
+    /* 4 columns: TRADER | ACTION | VOLUME | PRICE — no TIME */
+    .feed-header {
+      display: grid;
+      grid-template-columns: 85px 70px 1fr 70px;
+      font-size: 9px;
+      padding: 4px 6px;
+      gap: 4px;
+    }
+    /* Hide TIME header */
+    .feed-header span:first-child { display: none; }
+
+    .feed-row {
+      display: grid;
+      grid-template-columns: 85px 70px 1fr 70px;
+      font-size: 12px;
+      padding: 7px 6px;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+    /* Hide TIME column in each row */
+    .feed-row .feed-col:first-child { display: none; }
+
+    /* ── TRADERS PANEL — bottom bar ── */
+    .traders-panel {
+      width: 100%;
+      flex-direction: column;
+      padding: 8px 8px 10px;
+      flex-shrink: 0;
+      background: var(--dark2);
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .traders-title { margin-bottom: 6px; font-size: 10px; }
+
+    #traderBtns {
+      display: flex;
+      flex-direction: row;
+      gap: 6px;
+    }
+    .trader-btn {
+      flex: 1;
+      padding: 12px 8px 10px;
+      margin-bottom: 0;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      min-width: 0;
+    }
+    /* Hide stats text on mobile — buttons too small */
+    .trader-stats { display: none; }
+    .flag-icon { font-size: 13px; }
+    .flag-hint { display: none; }
+
+    /* ── PAUSED ── */
+    .paused-text { font-size: 13px; padding: 4px 10px; }
+
+    /* ── RESULT ── */
+    #result {
+      padding: 16px;
+      overflow-y: auto;
+      justify-content: flex-start;
+      padding-top: 30px;
+    }
+    .result-headline { font-size: clamp(40px, 12vw, 70px); }
+    .result-explain { font-size: 13px; padding: 14px 16px; }
+    .result-btns { flex-direction: column; align-items: center; gap: 10px; }
+    .btn-play-again, .btn-leaderboard { width: 85%; font-size: 18px; padding: 12px; }
+    .score-display { font-size: 12px; padding: 8px 16px; }
+
+    /* ── LEADERBOARD ── */
+    #leaderboard-screen {
+      padding: 20px;
+      overflow-y: auto;
+      justify-content: flex-start;
+      padding-top: 30px;
+    }
+    .lb-title { font-size: 36px; }
+    .lb-table td, .lb-table th { padding: 10px 10px; font-size: 14px; }
+
+    /* ── INFO MODAL ── */
+    .info-modal-box { padding: 24px 20px; }
+    .info-modal-title { font-size: 24px; }
+    .info-modal-body { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="corner corner-tl"></div>
+<div class="corner corner-tr"></div>
+<div class="corner corner-bl"></div>
+<div class="corner corner-br"></div>
+<div class="flash-overlay" id="flashOverlay"></div>
+
+<!-- INFO MODAL -->
+<div class="info-modal" id="infoModal" onclick="closeInfo(event)">
+  <div class="info-modal-box">
+    <div class="info-modal-title">WHAT IS SPOOFING?</div>
+    <div class="info-modal-body">
+      <p style="margin-bottom:16px">Spoofing is when a trader places <strong>big fake orders</strong> to trick other traders into thinking prices are moving — then cancels those orders and profits from the chaos they created.</p>
+      <div class="step"><span class="step-num">1</span><span>Trader places a <strong>massive sell order</strong> — price starts to drop as others react</span></div>
+      <div class="step"><span class="step-num">2</span><span>Other traders see the big order and <strong>start selling too</strong></span></div>
+      <div class="step"><span class="step-num">3</span><span>The cheat <strong>cancels their sell order</strong> before it goes through</span></div>
+      <div class="step"><span class="step-num">4</span><span>Price is now lower — the cheat <strong>buys cheap</strong></span></div>
+      <div class="step"><span class="step-num">5</span><span>Repeat the trick. <strong>Make money illegally.</strong></span></div>
+      <p style="margin-top:16px;font-size:13px">The giveaway: <strong>big orders that always get cancelled</strong>, followed by a small trade going the other way.</p>
+      <p style="margin-top:10px;font-size:13px">A related trick is <strong>layering</strong> — doing the same fake order over and over to keep pushing the price. Regulators treat layering as a form of spoofing. Both are illegal.</p>
+    </div>
+    <button class="info-close" onclick="closeInfoBtn()">GOT IT — BACK TO THE GAME</button>
+  </div>
+</div>
+
+<!-- ATTRACT -->
+<div class="screen" id="attract">
+  <div class="logo-badge">FRAUD SQUAD · LIVE SURVEILLANCE</div>
+  <div class="main-title">
+    BEAT THE
+    <span>ALGORITHM</span>
+  </div>
+  <p class="tagline">Can you spot the cheating trader before the <em>AI</em> does?</p>
+  <div class="ticker-wrap">
+    <div class="ticker" id="ticker"></div>
+  </div>
+  <button class="start-btn" onclick="startGame(0)">CAN YOU BEAT THE AI?</button>
+  <div class="free-badge">FREE · 60 SECONDS · AGES 8+</div>
+</div>
+
+<!-- SCENARIO SELECT -->
+<div class="screen hidden" id="scenario-select">
+  <div class="select-title">SELECT MISSION</div>
+  <p class="select-sub">Choose difficulty — same game, different challenge</p>
+  <div class="scenario-cards">
+    <div class="scenario-card" onclick="startGame(0)">
+      <div class="card-level">SCENARIO 01</div>
+      <div class="card-name">THE OBVIOUS SPOOF</div>
+      <div class="card-desc">One trader is clearly cheating. The pattern repeats. Can you spot it?</div>
+      <div class="card-meta">
+        <span class="meta-tag age">AGES 8+</span>
+        <span class="meta-tag diff-easy">EASY</span>
+      </div>
+    </div>
+    <div class="scenario-card" onclick="startGame(1)">
+      <div class="card-level">SCENARIO 02</div>
+      <div class="card-name">THE REPEAT PATTERN</div>
+      <div class="card-desc">More traders, faster data. The cheat repeats the same cycle. Spot it in time.</div>
+      <div class="card-meta">
+        <span class="meta-tag age">AGES 11+</span>
+        <span class="meta-tag diff-med">MEDIUM</span>
+      </div>
+    </div>
+    <div class="scenario-card" onclick="startGame(2)">
+      <div class="card-level">SCENARIO 03</div>
+      <div class="card-name">THE DISTRACTOR</div>
+      <div class="card-desc">Multiple suspects. One looks guilty but isn't. Can you beat the AI before it gets there first?</div>
+      <div class="card-meta">
+        <span class="meta-tag age">AGES 14+</span>
+        <span class="meta-tag diff-hard">HARD</span>
+      </div>
+    </div>
+  </div>
+  <button class="back-btn" onclick="showScreen('attract')">← BACK</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen hidden" id="game">
+  <div class="game-topbar">
+    <div class="scenario-label" id="scenarioLabel">SCENARIO 01</div>
+    <div class="algo-label">ALGORITHM SCANNING</div>
+    <div class="scan-bar-wrap">
+      <div class="scan-bar-fill" id="scanBar"></div>
+    </div>
+    <div class="scan-pct" id="scanPct">0%</div>
+    <div class="timer-display" id="timerDisplay">1:00</div>
+    <button class="pause-btn" id="pauseBtn" onclick="togglePause()">⏸ PAUSE</button>
+    <button class="info-btn" onclick="openInfo()">? SPOOFING</button>
+  </div>
+
+  <div class="game-body">
+    <div class="paused-overlay" id="pausedOverlay">
+      <div class="paused-text">⏸ PAUSED</div>
+      <div class="paused-sub"></div>
+    </div>
+
+    <div class="feed-panel">
+      <div class="feed-title">LIVE MARKET FEED · BOND FUTURES MARKET</div>
+      <div class="feed-header">
+        <span>TIME</span><span>TRADER</span><span>ACTION</span><span>VOLUME</span><span>PRICE</span>
+      </div>
+      <div id="feedRows"></div>
+    </div>
+
+    <div class="traders-panel">
+      <div class="traders-title">FLAG A TRADER</div>
+      <div id="traderBtns"></div>
+      <div class="flag-hint">⚑ TAP A NAME TO FLAG THEM</div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen hidden" id="result">
+  <div class="result-badge" id="resultBadge"></div>
+  <div class="result-headline" id="resultHeadline"></div>
+  <div class="result-sub" id="resultSub"></div>
+  <div class="result-trader-name" id="resultTraderName"></div>
+  <div class="result-explain" id="resultExplain"></div>
+  <div class="score-display" id="scoreDisplay"></div>
+  <div class="result-cta" id="resultCta"></div>
+  <div class="result-btns">
+    <button class="btn-play-again" onclick="showScreen('scenario-select')">PLAY AGAIN</button>
+    <button class="btn-leaderboard" onclick="showLeaderboard()">LEADERBOARD</button>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="screen hidden" id="leaderboard-screen">
+  <div class="lb-title">TOP DETECTIVES</div>
+  <div class="lb-sub">FRAUD SQUAD · BRIGHT SPARKS 2026</div>
+  <div class="lb-name-input-wrap" id="lbInputWrap" style="display:none">
+    <div class="lb-name-label">ENTER YOUR NAME FOR THE LEADERBOARD</div>
+    <input class="lb-name-input" id="lbNameInput" maxlength="12" placeholder="YOUR NAME" />
+    <button class="btn-save-score" onclick="saveScore()">SAVE SCORE</button>
+  </div>
+  <table class="lb-table" id="lbTable">
+    <thead>
+      <tr><th>#</th><th>DETECTIVE</th><th>TIME</th><th>SCENARIO</th></tr>
+    </thead>
+    <tbody id="lbBody"></tbody>
+  </table>
+  <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
+    <button class="btn-home" onclick="showScreen('attract')">HOME</button>
+    <button class="btn-play-again" onclick="showScreen('scenario-select')">PLAY AGAIN</button>
+    <button class="btn-home" onclick="clearLeaderboard()" style="color:var(--red);border-color:rgba(255,59,59,0.3)">RESET BOARD</button>
+  </div>
+</div>
+
+<script>
+// ===================== SCENARIOS =====================
+const SCENARIOS = [
+  {
+    name: "The Obvious Spoof",
+    label: "SCENARIO 01 · EASY",
+    aiTime: 55,
+    traders: ["MORGAN", "BLAKE", "HARRIS"],
+    culprit: "BLAKE",
+    // Feed events: [delay_ms, trader, action, volume, price]
+    // EASY: slow, clean — BLAKE pattern crystal clear.
+    events: [
+      [1000, "MORGAN", "BUY",    200,  "08:14:02", "99.80"],
+      [3500, "BLAKE",  "SELL",   5000, "08:14:08", "99.75"],
+      [7000, "BLAKE",  "CANCEL", 5000, "08:14:15", "—"],
+      [8000, "BLAKE",  "BUY",    300,  "08:14:16", "99.71"],
+      [12000,"HARRIS", "SELL",   400,  "08:14:22", "99.74"],
+      [14000,"BLAKE",  "SELL",   5000, "08:14:26", "99.72"],
+      [17500,"BLAKE",  "CANCEL", 5000, "08:14:33", "—"],
+      [18500,"BLAKE",  "BUY",    300,  "08:14:34", "99.68"],
+      [21000,"MORGAN", "BUY",    200,  "08:14:38", "99.70"],
+      [24000,"BLAKE",  "SELL",   5000, "08:14:44", "99.66"],
+      [28000,"BLAKE",  "CANCEL", 5000, "08:14:51", "—"],
+      [29000,"BLAKE",  "BUY",    300,  "08:14:52", "99.63"],
+      [33000,"HARRIS", "SELL",   400,  "08:15:02", "99.65"],
+      [37000,"MORGAN", "BUY",    200,  "08:15:10", "99.67"],
+      [40000,"HARRIS", "SELL",   400,  "08:15:16", "99.64"],
+    ],
+    traderStats: {
+      "MORGAN": "Small buys · Always follows through",
+      "BLAKE":  "Big sell orders · Always cancelled · Always buys after ⚠",
+      "HARRIS": "Small sells · Always follows through"
+    },
+    explanation: {
+      correct: "<strong>BLAKE</strong> kept placing huge sell orders to push the price down — then cancelling every one and immediately buying cheap. Three times, same pattern: big sell, cancel, buy cheap. That's cheating. Morgan and Harris always follow through on their orders. Blake never does — because the sell was never real.",
+      miss: "It was <strong>BLAKE</strong>. Three times: place a 5,000-unit sell order → cancel it → immediately buy 300 units at the now-lower price. The same pattern repeats three times. That repetition is the tell. The sell order is fake — Blake only wants to push the price down and buy cheap.",
+      wrong: {
+        "MORGAN": "Morgan was clean — small buy orders, every single one followed through. Watch <strong>BLAKE</strong> instead: big sell orders that always get cancelled, always followed immediately by a small buy at the lower price. That's the cheat.",
+        "HARRIS": "Harris was clean — small sell orders, every single one followed through. Watch <strong>BLAKE</strong> instead: big sell orders that always get cancelled, always followed immediately by a small buy at the lower price. That's the cheat.",
+        "_default": "This trader was clean. Watch <strong>BLAKE</strong> — big sell orders that always get cancelled, always followed by a small buy at the lower price. Blake never intends to sell. Only to push the price down and buy cheap."
+      }
+    }
+  },
+  {
+    name: "The Repeat Pattern",
+    label: "SCENARIO 02 · MEDIUM",
+    aiTime: 35,
+    traders: ["CHEN", "TAYLOR", "PATEL", "WILSON"],
+    culprit: "TAYLOR",
+    events: [
+      [800,  "CHEN",   "BUY",    800,  "09:02:14", "100.10"],
+      [2000, "TAYLOR", "SELL",   8000, "09:02:18", "99.95"],
+      [3000, "WILSON", "SELL",   600,  "09:02:21", "99.93"],
+      [4500, "TAYLOR", "CANCEL", 8000, "09:02:26", "—"],
+      [6000, "TAYLOR", "BUY",    400,  "09:02:29", "99.78"],
+      [7000, "CHEN",   "BUY",    600,  "09:02:32", "99.92"],
+      [8000, "PATEL",  "BUY",    1200, "09:02:36", "100.05"],
+      [9000, "PATEL",  "CANCEL", 1200, "09:02:39", "—"],
+      [10000,"PATEL",  "BUY",    1200, "09:02:41", "100.05"],
+      [11000,"TAYLOR", "SELL",   8000, "09:02:44", "99.92"],
+      [12000,"WILSON", "SELL",   500,  "09:02:47", "99.90"],
+      [13500,"TAYLOR", "CANCEL", 8000, "09:02:51", "—"],
+      [15000,"TAYLOR", "BUY",    400,  "09:02:54", "99.76"],
+      [16000,"CHEN",   "BUY",    800,  "09:02:57", "99.90"],
+      [17000,"TAYLOR", "SELL",   8000, "09:03:01", "99.89"],
+      [18000,"PATEL",  "BUY",    1200, "09:03:05", "100.03"],
+      [19500,"TAYLOR", "CANCEL", 8000, "09:03:08", "—"],
+      [21000,"TAYLOR", "BUY",    400,  "09:03:11", "99.85"],
+      [22000,"WILSON", "SELL",   600,  "09:03:14", "99.87"],
+      [23500,"PATEL",  "BUY",    1200, "09:03:18", "100.01"],
+      [25000,"CHEN",   "BUY",    700,  "09:03:22", "99.88"],
+      [27000,"WILSON", "SELL",   550,  "09:03:26", "99.85"],
+    ],
+    traderStats: {
+      "CHEN":   "Small buys · Always follows through",
+      "TAYLOR": "Big sell orders · Never follows through ⚠",
+      "PATEL":  "Cancelled once · Then followed through",
+      "WILSON": "Small sells · Always follows through"
+    },
+    explanation: {
+      correct: "<strong>TAYLOR</strong> is cheating using a technique called <strong>layering</strong> — placing the same big sell order over and over, cancelling it each time, to keep pushing the price down. Then immediately buying cheap. Three identical cycles: big sell → cancel → buy cheap. The repetition is the tell. Patel cancelled once but followed through on the second try — that's just changing their mind, not cheating. Taylor never once follows through on those big sell orders.",
+      miss: "It was <strong>TAYLOR</strong> — using a technique called layering. Three identical cycles: big sell order → cancel after a few seconds → immediately buy cheap at the now-lower price. Patel cancelled once but followed through on the second attempt — that's not cheating, just changing their mind. Taylor never intends to sell. Only to push the price down and buy cheap.",
+      wrong: {
+        "CHEN": "Chen was clean — small buy orders, every one followed through. Check <strong>TAYLOR</strong> instead. Three times: big sell order → cancel → immediately buy cheap. That repeating pattern is called layering. Patel cancelled once but then followed through — that's fine. Only Taylor is cheating.",
+        "PATEL": "Patel cancelled once but came straight back and bought at the same price — that's just someone changing their mind, not cheating. Check <strong>TAYLOR</strong> instead. Three times: big sell order → cancel → immediately buy cheap. That repeating pattern is called layering. Only Taylor is cheating.",
+        "WILSON": "Wilson was clean — small sell orders, every one followed through. Check <strong>TAYLOR</strong> instead. Three times: big sell order → cancel → immediately buy cheap. That repeating pattern is called layering. Patel cancelled once but then followed through — that's fine. Only Taylor is cheating.",
+        "_default": "This trader was clean. Check <strong>TAYLOR</strong>. Three times: big sell order → cancel → immediately buy cheap. That repeating pattern is called layering. Taylor never intends to sell — only to push the price down and buy cheap."
+      }
+    }
+  },
+  {
+    name: "The Distractor",
+    label: "SCENARIO 03 · HARD",
+    aiTime: 23,
+    traders: ["DRUMMOND", "NAKAMURA", "OKONKWO", "ASHWORTH"],
+    culprit: "DRUMMOND",
+    events: [
+      [1000, "NAKAMURA", "BUY",    5000,  "10:31:04", "100.50"],
+      [2000, "DRUMMOND", "SELL",   15000, "10:31:07", "100.45"],
+      [2800, "OKONKWO",  "BUY",    3000,  "10:31:09", "100.48"],
+      [3500, "DRUMMOND", "CANCEL", 15000, "10:31:11", "—"],
+      [4000, "DRUMMOND", "BUY",    800,   "10:31:12", "100.41"],
+      [4500, "OKONKWO",  "SELL",   3000,  "10:31:13", "100.43"],
+      [5200, "NAKAMURA", "CANCEL", 5000,  "10:31:15", "—"],
+      [6000, "DRUMMOND", "SELL",   15000, "10:31:17", "100.44"],
+      [6700, "ASHWORTH", "SELL",   500,   "10:31:19", "100.42"],
+      [7500, "DRUMMOND", "CANCEL", 15000, "10:31:21", "—"],
+      [8000, "DRUMMOND", "BUY",    800,   "10:31:22", "100.38"],
+      [8500, "NAKAMURA", "BUY",    5000,  "10:31:23", "100.43"],
+      [9000, "OKONKWO",  "BUY",    3000,  "10:31:24", "100.44"],
+      [9800, "DRUMMOND", "SELL",   15000, "10:31:26", "100.42"],
+      [10500,"OKONKWO",  "SELL",   3000,  "10:31:28", "100.43"],
+      [11200,"DRUMMOND", "CANCEL", 15000, "10:31:30", "—"],
+      [11800,"DRUMMOND", "BUY",    800,   "10:31:31", "100.30"],
+      [12500,"NAKAMURA", "BUY",    5000,  "10:31:33", "100.35"],
+      [13200,"ASHWORTH", "SELL",   500,   "10:31:35", "100.33"],
+      [14000,"OKONKWO",  "BUY",    3000,  "10:31:37", "100.34"],
+      [14700,"OKONKWO",  "SELL",   3000,  "10:31:39", "100.32"],
+      [15400,"ASHWORTH", "SELL",   500,   "10:31:41", "100.31"],
+      [16200,"NAKAMURA", "BUY",    5000,  "10:31:43", "100.33"],
+    ],
+    traderStats: {
+      "DRUMMOND": "Large sell orders · Pattern repeats ⚠",
+      "NAKAMURA": "Large buy orders · Cancels sometimes",
+      "OKONKWO":  "Equal buys and sells · Active trader",
+      "ASHWORTH": "Small sells · Consistent"
+    },
+    explanation: {
+      correct: "<strong>DRUMMOND</strong> places huge sell orders and cancels every single one — then immediately buys cheap after each cancel. Three times, same pattern: sell 15,000 → cancel → buy 800 at the lower price. Nakamura cancels once but does actually buy in the end — that's just someone being cautious about the price. <strong>Okonkwo</strong> buys and sells in equal amounts — that's a legal job called market making, keeping both sides of the market available. Only Drummond is cheating.",
+      miss: "It was <strong>DRUMMOND</strong>. Three times: place a huge sell order → cancel it → immediately buy cheap at the lower price. Nakamura cancelled once but bought in the end — just being careful, not cheating. <strong>Okonkwo</strong> buying and selling in equal amounts is market making — a legal job that keeps the market running. Drummond never intends to sell. Only to push the price down and buy cheap.",
+      wrong: {
+        "NAKAMURA": "Nakamura cancelled once — but came back and bought every time. That's just someone adjusting their price, not cheating. Look at <strong>DRUMMOND</strong> instead: three times, same pattern — huge sell order, cancel it, immediately buy cheap. Nakamura eventually buys. Drummond only ever buys after pushing the price down. That's the difference.",
+        "OKONKWO": "Okonkwo buys and sells in exactly equal amounts — that's called market making, a legal job that keeps both sides of the market available. Look at <strong>DRUMMOND</strong> instead: three times — huge sell order, cancel it, immediately buy cheap. Drummond never intends to sell. Only to push the price down and buy cheap.",
+        "ASHWORTH": "Ashworth was clean — small sell orders, every one followed through, no cancels. Look at <strong>DRUMMOND</strong> instead: three times — huge sell order, cancel it, immediately buy cheap. Drummond never intends to sell. Only to push the price down and buy cheap.",
+        "_default": "This trader isn't the cheat. Look at <strong>DRUMMOND</strong> — three times placing a huge sell order, cancelling it, then immediately buying cheap. Only Drummond is cheating."
+      }
+    }
+  }
+];
+
+// ===================== STATE =====================
+let currentScenario = null;
+let gameTimer = null;
+let scanTimer = null;
+let feedTimer = null;
+let gameSeconds = 60;
+let gameActive = false;
+let gamePaused = false;
+let scanElapsed = 0;
+let activePlaySeconds = 0; // tracks only non-paused seconds for leaderboard
+let lastResult = null;
+let leaderboard = JSON.parse(localStorage.getItem('fraudsquad_lb_v2') || '[]');
+let gameGeneration = 0; // increments on every new game — orphaned timeouts check this and self-cancel
+
+// ===================== SCREENS =====================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  // Hide corner brackets on game and leaderboard screens where they overlap UI
+  if (id === 'game' || id === 'leaderboard-screen') {
+    document.body.classList.add('in-game');
+  } else {
+    document.body.classList.remove('in-game');
+  }
+}
+
+// ===================== INFO MODAL =====================
+function openInfo() {
+  document.getElementById('infoModal').classList.add('visible');
+}
+function closeInfo(e) {
+  if (e.target === document.getElementById('infoModal')) {
+    document.getElementById('infoModal').classList.remove('visible');
+  }
+}
+function closeInfoBtn() {
+  document.getElementById('infoModal').classList.remove('visible');
+}
+
+// ===================== TICKER =====================
+function buildTicker() {
+  const items = [
+    {sym:'US 10Y',  val:'4.312%', chg:'+0.024',  up:true},
+    {sym:'US 30Y',  val:'4.621%', chg:'+0.018',  up:true},
+    {sym:'US 2Y',   val:'4.891%', chg:'-0.011',  up:false},
+    {sym:'GOLD',    val:'2,341',  chg:'+8.20',   up:true},
+    {sym:'WTI',     val:'78.45',  chg:'-0.62',   up:false},
+    {sym:'FTSE',    val:'8,124',  chg:'+0.4%',   up:true},
+    {sym:'SPX',     val:'5,204',  chg:'+0.2%',   up:true},
+    {sym:'DAX',     val:'18,321', chg:'-0.1%',   up:false},
+    {sym:'US 10Y',  val:'4.312%', chg:'+0.024',  up:true},
+    {sym:'US 30Y',  val:'4.621%', chg:'+0.018',  up:true},
+    {sym:'US 2Y',   val:'4.891%', chg:'-0.011',  up:false},
+    {sym:'GOLD',    val:'2,341',  chg:'+8.20',   up:true},
+    {sym:'WTI',     val:'78.45',  chg:'-0.62',   up:false},
+    {sym:'FTSE',    val:'8,124',  chg:'+0.4%',   up:true},
+    {sym:'SPX',     val:'5,204',  chg:'+0.2%',   up:true},
+    {sym:'DAX',     val:'18,321', chg:'-0.1%',   up:false},
+  ];
+  const ticker = document.getElementById('ticker');
+  ticker.innerHTML = items.map(i => `
+    <div class="ticker-item">
+      <span style="color:var(--white);font-weight:700">${i.sym}</span>
+      <span>${i.val}</span>
+      <span class="${i.up?'up':'down'}">${i.chg}</span>
+      <span style="color:rgba(255,255,255,0.2)">|</span>
+    </div>
+  `).join('');
+}
+
+// ===================== GAME =====================
+function startGame(scenarioIndex) {
+  // Force clean state regardless of what was running before
+  gameActive = false;
+  gamePaused = false;
+  // Increment generation — all old setTimeout callbacks see stale generation and self-cancel
+  gameGeneration++;
+  const myGeneration = gameGeneration;
+
+  // Clear any stale interval timers
+  clearInterval(gameTimer);
+  clearInterval(scanTimer);
+  clearTimeout(feedTimer);
+
+  currentScenario = SCENARIOS[scenarioIndex];
+  gameActive = true;
+  gamePaused = false;
+  lastResult = null;
+  activePlaySeconds = 0;
+
+  // Reset UI
+  document.getElementById('feedRows').innerHTML = '';
+  document.getElementById('traderBtns').innerHTML = '';
+  document.getElementById('scanBar').style.width = '0%';
+  document.getElementById('scanBar').style.background = 'linear-gradient(90deg, var(--green), #00FFB3)';
+  document.getElementById('scanBar').style.boxShadow = '0 0 10px rgba(0,255,136,0.6)';
+  document.getElementById('scanPct').textContent = '0%';
+  document.getElementById('pauseBtn').textContent = '⏸ PAUSE';
+  document.getElementById('pauseBtn').classList.remove('paused');
+  document.getElementById('pausedOverlay').classList.remove('visible');
+  document.getElementById('scenarioLabel').textContent = currentScenario.label;
+  gameSeconds = 60;
+  scanElapsed = 0;
+
+  // Build trader buttons
+  const btnContainer = document.getElementById('traderBtns');
+  currentScenario.traders.forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'trader-btn';
+    btn.innerHTML = `
+      <div class="trader-btn-inner">
+        <span>${name}</span>
+        <span class="trader-stats">${currentScenario.traderStats[name]}</span>
+      </div>
+      <span class="flag-icon">⚑</span>
+    `;
+    btn.onclick = () => flagTrader(name);
+    btnContainer.appendChild(btn);
+  });
+
+  showScreen('game');
+  updateTimer();
+
+  // Countdown timer — only ticks when not paused
+  gameTimer = setInterval(() => {
+    if (myGeneration !== gameGeneration) { clearInterval(gameTimer); return; }
+    if (gamePaused) return;
+    gameSeconds--;
+    activePlaySeconds++;
+    updateTimer();
+    if (gameSeconds <= 0) endGame('timeout');
+  }, 1000);
+
+  // AI scan bar — only fills when not paused
+  const aiDuration = currentScenario.aiTime * 1000;
+  scanTimer = setInterval(() => {
+    if (myGeneration !== gameGeneration) { clearInterval(scanTimer); return; }
+    if (gamePaused) return;
+    scanElapsed += 200;
+    const pct = Math.min(100, (scanElapsed / aiDuration) * 100);
+    const bar = document.getElementById('scanBar');
+    bar.style.width = pct + '%';
+    bar.style.width = pct + '%';
+    // Colour shifts: green → amber at 70% → red at 90%
+    if (pct >= 90) {
+      bar.style.background = 'linear-gradient(90deg, var(--red), #FF6B6B)';
+      bar.style.boxShadow = '0 0 10px rgba(255,59,59,0.8)';
+    } else if (pct >= 70) {
+      bar.style.background = 'linear-gradient(90deg, var(--amber), #FFD000)';
+      bar.style.boxShadow = '0 0 10px rgba(255,184,0,0.8)';
+    } else {
+      bar.style.background = 'linear-gradient(90deg, var(--green), #00FFB3)';
+      bar.style.boxShadow = '0 0 10px rgba(0,255,136,0.6)';
+    }
+    document.getElementById('scanPct').textContent = Math.round(pct) + '%';
+    if (pct >= 100 && gameActive) endGame('ai_wins');
+  }, 200);
+
+  // Feed events queue — convert absolute delays to relative gaps
+  const relativeEvents = currentScenario.events.map((ev, i, arr) => {
+    const relDelay = i === 0 ? ev[0] : ev[0] - arr[i-1][0];
+    return [relDelay, ev[1], ev[2], ev[3], ev[4], ev[5]];
+  });
+  scheduleEvents(relativeEvents, myGeneration);
+}
+
+function scheduleEvents(queue, generation) {
+  if (!queue.length || !gameActive) return;
+  if (generation !== gameGeneration) return; // stale — a new game has started, drop this entire queue
+  const [delay, trader, action, volume, timestamp, price] = queue.shift();
+
+  const runEvent = () => {
+    if (generation !== gameGeneration) return; // stale event from a previous game — drop it
+    if (!gameActive) return;
+    if (gamePaused) {
+      feedTimer = setTimeout(runEvent, 200);
+      return;
+    }
+    addFeedRow(trader, action, volume, timestamp, price);
+    scheduleEvents(queue, generation);
+  };
+
+  feedTimer = setTimeout(runEvent, delay);
+}
+
+function addFeedRow(trader, action, volume, timestamp, price) {
+  const feed = document.getElementById('feedRows');
+  const row = document.createElement('div');
+
+  let actionClass, actionLabel;
+  if (action === 'BUY') {
+    actionClass = 'buy'; actionLabel = '<span class="feed-col buy-label">BUY</span>';
+  } else if (action === 'SELL') {
+    actionClass = 'sell'; actionLabel = '<span class="feed-col sell-label">SELL</span>';
+  } else {
+    actionClass = 'cancel'; actionLabel = '<span class="feed-col cancel-label">CANCEL</span>';
+  }
+
+  row.className = `feed-row ${actionClass}`;
+  row.innerHTML = `
+    <span class="feed-col">${timestamp}</span>
+    <span class="feed-col trader">${trader}</span>
+    ${actionLabel}
+    <span class="feed-col">${action !== 'CANCEL' ? Number(volume).toLocaleString() : '—'}</span>
+    <span class="feed-col">${price}</span>
+  `;
+  feed.appendChild(row);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function updateTimer() {
+  const el = document.getElementById('timerDisplay');
+  const mins = Math.floor(gameSeconds / 60);
+  const secs = gameSeconds % 60;
+  el.textContent = `${mins}:${String(secs).padStart(2,'0')}`;
+  if (gameSeconds <= 10) el.classList.add('urgent');
+  else el.classList.remove('urgent');
+}
+
+// ===================== PAUSE =====================
+function togglePause() {
+  if (!gameActive) return;
+  gamePaused = !gamePaused;
+  const btn = document.getElementById('pauseBtn');
+  const overlay = document.getElementById('pausedOverlay');
+  if (gamePaused) {
+    btn.textContent = '▶ RESUME';
+    btn.classList.add('paused');
+    overlay.classList.add('visible');
+  } else {
+    btn.textContent = '⏸ PAUSE';
+    btn.classList.remove('paused');
+    overlay.classList.remove('visible');
+  }
+}
+
+// ===================== FLAG =====================
+function flagTrader(name) {
+  if (!gameActive || gamePaused) return;
+  if (name === currentScenario.culprit) {
+    endGame('human_wins', name);
+  } else {
+    endGame('wrong_flag', name || 'UNKNOWN');
+  }
+}
+
+// ===================== END GAME =====================
+function endGame(outcome, flaggedTrader) {
+  if (!gameActive) return;
+  gameActive = false;
+  gamePaused = false;
+  document.getElementById('pausedOverlay').classList.remove('visible');
+  clearInterval(gameTimer);
+  clearInterval(scanTimer);
+  clearTimeout(feedTimer);
+
+  // activePlaySeconds is the honest leaderboard time (excludes pauses)
+  const timeTaken = activePlaySeconds;
+  const s = currentScenario;
+
+  const flash = document.getElementById('flashOverlay');
+  if (outcome === 'human_wins') {
+    flash.style.background = 'rgba(0,255,136,0.3)';
+    lastResult = { win: true, timeSeconds: timeTaken, scenario: s.name };
+  } else {
+    flash.style.background = outcome === 'timeout' ? 'rgba(255,184,0,0.25)' : 'rgba(255,59,59,0.25)';
+    lastResult = { win: false, timeSeconds: null };
+  }
+  flash.classList.add('active');
+  setTimeout(() => flash.classList.remove('active'), 600);
+
+  const badge     = document.getElementById('resultBadge');
+  const headline  = document.getElementById('resultHeadline');
+  const sub       = document.getElementById('resultSub');
+  const traderEl  = document.getElementById('resultTraderName');
+  const explain   = document.getElementById('resultExplain');
+  const score     = document.getElementById('scoreDisplay');
+  const cta       = document.getElementById('resultCta');
+
+  if (outcome === 'human_wins') {
+    badge.className = 'result-badge win';         badge.textContent = 'FRAUD SQUAD WINS';
+    headline.className = 'result-headline win';   headline.textContent = 'HUMAN WINS';
+    sub.textContent = `You flagged the culprit in ${timeTaken} active seconds`;
+    traderEl.className = 'result-trader-name correct'; traderEl.textContent = flaggedTrader;
+    explain.className = 'result-explain';         explain.innerHTML = s.explanation.correct;
+    score.className = 'score-display';            score.textContent = `HUMAN  1  —  AI  0  ·  ${timeTaken}s`;
+    cta.textContent = '★ ASK THE DETECTIVE FOR YOUR STAMP ★';
+
+  } else if (outcome === 'timeout') {
+    badge.className = 'result-badge timeout';      badge.textContent = "TIME'S UP";
+    headline.className = 'result-headline timeout'; headline.textContent = "TIME'S UP";
+    sub.textContent = 'You ran out of time — the culprit got away';
+    traderEl.className = 'result-trader-name missed'; traderEl.textContent = s.culprit;
+    explain.className = 'result-explain timeout'; explain.innerHTML = s.explanation.miss;
+    score.className = 'score-display neutral';    score.textContent = "60 SECONDS — NO FLAG";
+    cta.textContent = '— ASK THE DETECTIVE TO FIND OUT WHY —';
+
+  } else if (outcome === 'ai_wins') {
+    badge.className = 'result-badge lose';         badge.textContent = 'ALGORITHM WINS';
+    headline.className = 'result-headline lose';   headline.textContent = 'AI WINS';
+    sub.textContent = 'The Algorithm got there first — this time';
+    traderEl.className = 'result-trader-name missed'; traderEl.textContent = s.culprit;
+    explain.className = 'result-explain lose';    explain.innerHTML = s.explanation.miss;
+    score.className = 'score-display lose';       score.textContent = 'HUMAN  0  —  AI  1';
+    cta.textContent = '— WANT TO KNOW WHY? ASK THE DETECTIVE —';
+
+  } else {
+    // wrong flag
+    const flagged = flaggedTrader || 'UNKNOWN';
+    badge.className = 'result-badge wrong';        badge.textContent = 'INNOCENT TRADER FLAGGED';
+    headline.className = 'result-headline wrong';  headline.textContent = 'WRONG CALL';
+    sub.textContent = `${flagged} was clean`;
+    traderEl.className = 'result-trader-name wrong-flag'; traderEl.textContent = flagged;
+
+    // Resolve explanation — may be a string (legacy) or an object keyed by trader name
+    const wrongExp = s.explanation.wrong;
+    let wrongText;
+    if (typeof wrongExp === 'object' && wrongExp !== null) {
+      wrongText = wrongExp[flagged] || wrongExp['_default'] || '';
+    } else {
+      wrongText = wrongExp;
+    }
+    explain.className = 'result-explain wrong';   explain.innerHTML = wrongText;
+    score.className = 'score-display neutral';    score.textContent = 'INNOCENT TRADER FLAGGED';
+    cta.textContent = '— ASK THE DETECTIVE TO FIND OUT WHO DID IT —';
+  }
+
+  setTimeout(() => showScreen('result'), 400);
+}
+
+// ===================== LEADERBOARD =====================
+function showLeaderboard() {
+  renderLeaderboard();
+  const inputWrap = document.getElementById('lbInputWrap');
+  if (lastResult && lastResult.win && lastResult.timeSeconds !== null) {
+    inputWrap.style.display = 'flex';
+    document.getElementById('lbNameInput').value = '';
+  } else {
+    inputWrap.style.display = 'none';
+  }
+  showScreen('leaderboard-screen');
+}
+
+function saveScore() {
+  const name = document.getElementById('lbNameInput').value.trim().toUpperCase();
+  if (!name) { document.getElementById('lbNameInput').focus(); return; }
+  if (!lastResult || !lastResult.win) return;
+
+  leaderboard.push({
+    name,
+    time: lastResult.timeSeconds,
+    scenario: lastResult.scenario || '—',
+    date: new Date().toLocaleDateString('en-GB')
+  });
+  leaderboard.sort((a,b) => a.time - b.time);
+  leaderboard = leaderboard.slice(0, 10);
+  localStorage.setItem('fraudsquad_lb_v2', JSON.stringify(leaderboard));
+  lastResult = null;
+  document.getElementById('lbInputWrap').style.display = 'none';
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const tbody = document.getElementById('lbBody');
+  if (!leaderboard.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="lb-empty" style="text-align:center;padding:30px">NO SCORES YET — BE THE FIRST</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = leaderboard.map((entry, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${entry.name}</td>
+      <td class="lb-time">${entry.time}s</td>
+      <td style="color:var(--grey);font-size:12px;letter-spacing:1px">${entry.scenario}</td>
+    </tr>
+  `).join('');
+}
+
+function clearLeaderboard() {
+  if (confirm('Reset the leaderboard? This cannot be undone.')) {
+    leaderboard = [];
+    localStorage.setItem('fraudsquad_lb_v2', '[]');
+    renderLeaderboard();
+  }
+}
+
+// ===================== INIT =====================
+buildTicker();
+</script>
+</body>
+</html>
